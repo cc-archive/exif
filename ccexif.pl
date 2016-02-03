@@ -4,6 +4,21 @@
 # License: CC0. http://creativecommons.org/publicdomain/zero/1.0/
 #          To the extent possible under law, Creative Commons Corporation
 #          has waived all copyright and related or neighboring rights to ccexif.
+# ccexif is a simple Unix command line tool to read and write Creative Commons
+# license information in the Exif metadata of images.
+#
+# The format of this information is described in the Exif metadata proposal document.
+# ccexif does not currently read, write or reconcile XMP license information.
+#
+# Dependency Install
+# ccexif requires Perl 5 and the ArgParse and ExifTool libraries. If the latter
+# are not already installed they can be installed using cpan:
+# cpan
+# install Getopt::ArgParse
+# install Image::ExifTool
+# exit
+# Reading Metadata: ./ccexif person.jpg
+# Writing Metadata: ./ccexif -l by-sa --title person --workurl http://blah.com/person.jpg --author you --authorurl https://blah.com/author person.jpg
 
 use Getopt::ArgParse;
 use Image::ExifTool qw(:Public);
