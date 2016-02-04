@@ -4,37 +4,42 @@
 # License: CC0. http://creativecommons.org/publicdomain/zero/1.0/
 #          To the extent possible under law, Creative Commons Corporation
 #          has waived all copyright and related or neighboring rights to ccexif.
+#
 # ccexif is a simple Unix command line tool to read and write Creative Commons
 # license information in the Exif metadata of images.
 #
 # The format of this information is described in the Exif metadata proposal document.
 # ccexif does not currently read, write or reconcile XMP license information.
 #
-# Dependency Install
+# Dependency Install.
 # ccexif requires Perl 5 and the ArgParse and ExifTool libraries. If the latter
 # are not already installed they can be installed using cpan:
 # cpan
 # install Getopt::ArgParse
 # install Image::ExifTool
 # exit
-# Reading Metadata: ./ccexif person.jpg
-# Writing Metadata: ./ccexif -l by-sa --title person --workurl http://blah.com/person.jpg --author you --authorurl https://blah.com/author person.jpg
+#
+# Reading Metadata: ./ccexif.pl person.jpg
+# Writing Metadata: ./ccexif.pl --license by-sa --title person --workurl http://blah.com/person.jpg --author you --authorurl https://blah.com/author person.jpg
+
+use strict;
 
 use Getopt::ArgParse;
 use Image::ExifTool qw(:Public);
+use File::Copy qw(copy);
 
 my %license_urls = (
-    'by' => 'https://creativecommons.org/licenses/by/4.0/',
-    'by-sa' => 'https://creativecommons.org/licenses/by-sa/4.0/',
-    'by-nd' => 'https://creativecommons.org/licenses/by-nd/4.0/',
-    'by-nc' => 'https://creativecommons.org/licenses/by-nc/4.0/',
-    'by-nc-sa' => 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
-    'by-nc-nd' => 'https://creativecommons.org/licenses/by-nc-nd/4.0/'
+    'by' => 'http://creativecommons.org/licenses/by/4.0/',
+    'by-sa' => 'http://creativecommons.org/licenses/by-sa/4.0/',
+    'by-nd' => 'http://creativecommons.org/licenses/by-nd/4.0/',
+    'by-nc' => 'http://creativecommons.org/licenses/by-nc/4.0/',
+    'by-nc-sa' => 'http://creativecommons.org/licenses/by-nc-sa/4.0/',
+    'by-nc-nd' => 'http://creativecommons.org/licenses/by-nc-nd/4.0/'
 );
 
 my %license_names = (
     'by' => 'Attribution',
-    'by-sa' => 'Attribution-ShareAlike',
+    'by-sa' => 'Attribution-SahareAlike',
     'by-nd' => 'Attribution-NoDerivatives',
     'by-nc' => 'Attribution-NonCommercial',
     'by-nc-sa' => 'Attribution-NonCommercial-ShareAlike',
@@ -48,16 +53,18 @@ my %license_urls_reverse = reverse %license_urls;
 sub parse_args {
     my @argv = @_;
     my $parser = Getopt::ArgParse->new_parser(
-        prog        => 'ccexif',
+        prog        => 'ccexif.pl',
         description => "A simple tool to get/set JPEG Exif Creative Commons license metadata."
         );
+    $parser->add_arg('--ignoreminorerrors', '-m', type => 'Bool',
+                     help => 'ignore minor errors (e.g. "Bad PreviewIFD directory"');
     $parser->add_arg('--author', '-a',
                      help => 'attribution for the author, e.g. A. N. Other');
     $parser->add_arg('--title', '-t',
                      help => 'title of the work, e.g. My Cat');
-    $parser->add_arg('--workurl', '-u',
+    $parser->add_arg('--workurl', '-w',
                      help => 'url for the work, e.g. http://anopics.cc/cat');
-    $parser->add_arg('--authorurl', '-U',
+    $parser->add_arg('--authorurl', '-u',
                      help => 'url for the author, e.g. http://anopics.cc/');
     $parser->add_arg('--license', '-l', choices => \@license_ids,
                      help => 'license identifier');
@@ -73,7 +80,7 @@ sub get_author {
     my $author = $args->author;
     my $author_url = $args->authorurl;
     if (! $author) {
-        my $author_field = $metadata->GetValue('Author');
+        my $author_field = $metadata->GetValue('Artist');
         if ($author_field) {
             # Regex ignores space, punctuation, anything after closing >
             if ($author_field =~ /^(.+)\s*<([^>]+)>[^>]*$/) {
@@ -125,10 +132,10 @@ sub set_author {
     my ($metadata, $author, $author_url) = @_;
     if ($author) {
         if ($author_url) {
-            $metadata->SetNewValue('Author',
+            $metadata->SetNewValue('Artist',
                                    $author . ' <' . $author_url . '>');
         } else {
-            $metadata->SetNewValue('Author', $author);
+            $metadata->SetNewValue('Artist', $author);
         }
     }
 }
@@ -158,7 +165,7 @@ sub set_copyright {
     } elsif ($author) {
         $text .= 'By ' . $author . '. ';
     }
-    if (license_id) {
+    if ($license_id) {
         $text .= 'This work is licensed under the Creative Commons '
             . $license_names{$license_id} . ' 4.0 International License.'
             . ' To view a copy of this license, visit <'
@@ -186,9 +193,9 @@ sub display_metadata {
     CORE::say "Exif ImageDescription: " . $title_field;
     CORE::say "Title:                 " . $title;
     CORE::say "Work URL:              " . $work_url;
-    my $author_field = $exifTool->GetValue('Author');
+    my $author_field = $exifTool->GetValue('Artist');
     my ($author, $author_url) = get_author($exifTool, $args);
-    CORE::say "Exif Author:           " . $author_field;
+    CORE::say "Exif Artist:           " . $author_field;
     CORE::say "Author:                " . $author;
     CORE::say "Attribution URL:       " . $author_url;
     my $copyright_field = $exifTool->GetValue('Copyright');
@@ -197,19 +204,37 @@ sub display_metadata {
     CORE::say "License ID:            " . $license_id;
 }
 
+# Configuration
+
 my $args = parse_args(@ARGV);
 my $filename = $args->filename;
 CORE::say "Filename:              " . $filename;
 
 my $exifTool = new Image::ExifTool;
+if ($args->ignoreminorerrors) {
+    $exifTool->Options(IgnoreMinorErrors => 1);
+}
+
+# Update the metadata, if the license is set
 
 if ($args->license) {
     my $info = $exifTool->ImageInfo($filename);
     set_metadata($exifTool, $args);
-    my $oldfilename = $filename . '.bak';
-    rename $filename, $oldfilename;
-    $exifTool->WriteInfo($oldfilename, $filename);
+    my $err = $exifTool->WriteInfo($filename);
+    my $error_message = $exifTool->GetValue('Error');
+    if ($error_message) {
+        CORE::say 'ERROR:                 ' . $error_message;
+        CORE::say "To ignore [minor] errors (e.g. \"Bad PreviewIFD directory\")"
+            . ": --ignoreminorerrors";
+        exit 2;
+    }
+    my $warning_message = $exifTool->GetValue('Warning');
+    if ($warning_message) {
+        CORE::say 'WARNING:               ' . $warning_message;
+    }
 }
+
+# Display the (newly updated) metadata
 
 my $info = $exifTool->ImageInfo($filename);
 display_metadata($exifTool, parse_args([]));
