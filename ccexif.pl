@@ -29,17 +29,17 @@ use Image::ExifTool qw(:Public);
 use File::Copy qw(copy);
 
 my %license_urls = (
-    'by' => 'http://creativecommons.org/licenses/by/4.0/',
-    'by-sa' => 'http://creativecommons.org/licenses/by-sa/4.0/',
-    'by-nd' => 'http://creativecommons.org/licenses/by-nd/4.0/',
-    'by-nc' => 'http://creativecommons.org/licenses/by-nc/4.0/',
-    'by-nc-sa' => 'http://creativecommons.org/licenses/by-nc-sa/4.0/',
-    'by-nc-nd' => 'http://creativecommons.org/licenses/by-nc-nd/4.0/'
+    'by' => 'https://creativecommons.org/licenses/by/4.0/',
+    'by-sa' => 'https://creativecommons.org/licenses/by-sa/4.0/',
+    'by-nd' => 'https://creativecommons.org/licenses/by-nd/4.0/',
+    'by-nc' => 'https://creativecommons.org/licenses/by-nc/4.0/',
+    'by-nc-sa' => 'https://creativecommons.org/licenses/by-nc-sa/4.0/',
+    'by-nc-nd' => 'https://creativecommons.org/licenses/by-nc-nd/4.0/'
 );
 
 my %license_names = (
     'by' => 'Attribution',
-    'by-sa' => 'Attribution-SahareAlike',
+    'by-sa' => 'Attribution-ShareAlike',
     'by-nd' => 'Attribution-NoDerivatives',
     'by-nc' => 'Attribution-NonCommercial',
     'by-nc-sa' => 'Attribution-NonCommercial-ShareAlike',
