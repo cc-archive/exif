@@ -75,7 +75,7 @@ sub parse_args {
 }
 
 sub get_author {
-    # Set author and author_url from args, or if not set parse Author
+    # Set author and author_url from args, or if not set parse Author.
     my ($metadata, $args) = @_;
     my $author = $args->author;
     my $author_url = $args->authorurl;
@@ -95,7 +95,7 @@ sub get_author {
 }
 
 sub get_title {
-    # Set title and work_url from args, or if not set parse Title
+    # Set title and work_url from args, or if not set parse Title.
     my ($metadata, $args) = @_;
     my $title = $args->title;
     my $work_url = $args->workurl;
@@ -142,7 +142,7 @@ sub set_author {
 
 
 sub set_title {
-    # If the title is set, suse that. If work_url is also set, use both.
+    # If the title is set, use that. If work_url is also set, use both.
     my ($metadata, $title, $work_url) = @_;
     if ($title) {
         if ($work_url) {
